@@ -5,17 +5,28 @@ const soundFiles = [
   "sounds/closed-hat.mp3",
 ];
 
-const numSteps = 4;
-const numBars = 4;
+const resetButton = document.getElementById("reset");
+const speedButton = document.getElementById("numSpeed");
+let numSteps;
+let numBars;
+let numSpeed;
 
-let pads = [];
-let activeSteps = [];
+let pads;
+let activeSteps;
 let currentStep = 0;
 let isPlaying = false;
 let intervalId;
 
 function init() {
+  numSteps = document.getElementById("numBeats").value;
+  numBars = document.getElementById("numBars").value;
+  numSpeed = speedButton.value;
+  pads = [];
+  activeSteps = [];
+  currentStep = 0;
+
   const container = document.querySelector(".container");
+  container.replaceChildren();
 
   // Create the pads
   for (let i = 0; i < soundFiles.length; i++) {
@@ -30,9 +41,14 @@ function init() {
     const stepsContainer = document.createElement("div");
     stepsContainer.classList.add("steps-container");
 
+    const count = numSteps * numBars;
+    stepsContainer.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
+
     for (let j = 0; j < numSteps * numBars; j++) {
       const step = document.createElement("div");
       step.classList.add("step");
+      if (j % numSteps === 0) step.classList.add("bar-first");
+
       step.dataset.soundIndex = i;
       step.dataset.stepIndex = j;
       step.addEventListener("click", toggleStep);
@@ -61,44 +77,66 @@ function toggleStep(event) {
   event.target.classList.toggle("active");
 }
 
+function reset() {
+  stop();
+  init();
+}
+
+function stop() {
+  clearInterval(intervalId);
+  isPlaying = false;
+  this.textContext = "Play";
+}
+
 function togglePlayPause() {
   if (isPlaying) {
-    clearInterval(intervalId);
-    isPlaying = false;
-    this.textContent = "Play";
+    stop();
   } else {
-    let currentStep = 0;
-    intervalId = setInterval(() => {
-      // Play active pads for the current step
-      for (let i = 0; i < pads.length; i++) {
-        if (activeSteps[i][currentStep]) {
-          const audio = new Audio(soundFiles[i]);
-          audio.play();
-        }
-      }
-
-      // Update the step highlight
-      for (let i = 0; i < pads.length; i++) {
-        const steps = pads[i].querySelectorAll(".step");
-        steps[currentStep].classList.add("active");
-        if (currentStep === 0) {
-          steps[steps.length - 1].classList.remove("active");
-        } else {
-          steps[currentStep - 1].classList.remove("active");
-        }
-      }
-
-      // Increment the step
-      currentStep++;
-      if (currentStep === numSteps * numBars) {
-        currentStep = 0;
-      }
-    }, 60000 / (120 * numSteps));
-
+    currentStep = 0;
+    restartInterval();
     isPlaying = true;
     this.textContent = "Pause";
   }
 }
 
+function restartInterval() {
+  numSpeed = document.getElementById("numSpeed").value;
+  intervalId = setInterval(() => {
+    // Play active pads for the current step
+    for (let i = 0; i < pads.length; i++) {
+      if (activeSteps[i][currentStep]) {
+        const audio = new Audio(soundFiles[i]);
+        audio.play();
+      }
+    }
+
+    // Update the step highlight
+    for (let i = 0; i < pads.length; i++) {
+      const steps = pads[i].querySelectorAll(".step");
+      steps[currentStep].classList.add("highlight");
+      if (currentStep === 0) {
+        steps[steps.length - 1].classList.remove("highlight");
+      } else {
+        steps[currentStep - 1].classList.remove("highlight");
+      }
+    }
+
+    // Increment the step
+    currentStep++;
+    if (currentStep === numSteps * numBars) {
+      currentStep = 0;
+    }
+
+  }, 60000 / (numSpeed * numSteps));
+};
+
+function changeSpeed() {
+  console.log("range changed");
+  clearInterval(intervalId);
+  restartInterval();
+}
+
+resetButton.addEventListener("click", reset);
+speedButton.addEventListener("change", changeSpeed);
 init();
 

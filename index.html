@@ -1,85 +1,25 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Drum Machine Sequencer</title>
-    <link rel="stylesheet" type="text/css" href="style.css?v=5">
+    <title>Sequencer</title>
+    <link rel="stylesheet" type="text/css" href="style.css?v=26">
   </head>
   <body>
-    <div class="container">
-      <h1>Drum Machine Sequencer</h1>
-      <div class="sequencer">
-        <div class="grid">
-          <div class="header row">
-            <div class="cell"></div>
-            <div class="cell">Bar 1</div>
-            <div class="cell">Bar 2</div>
-            <div class="cell">Bar 3</div>
-            <div class="cell">Bar 4</div>
-          </div>
-          <div class="row">
-            <div class="cell">Kick</div>
-            <div class="cell">
-              <input type="checkbox" class="kick-beat-1">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="kick-beat-2">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="kick-beat-3">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="kick-beat-4">
-            </div>
-          </div>
-          <div class="row">
-            <div class="cell">Snare</div>
-            <div class="cell">
-              <input type="checkbox" class="snare-beat-1">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="snare-beat-2">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="snare-beat-3">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="snare-beat-4">
-            </div>
-          </div>
-          <div class="row">
-            <div class="cell">Open Hat</div>
-            <div class="cell">
-              <input type="checkbox" class="open-hat-beat-1">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="open-hat-beat-2">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="open-hat-beat-3">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="open-hat-beat-4">
-            </div>
-          </div>
-          <div class="row">
-            <div class="cell">Closed Hat</div>
-            <div class="cell">
-              <input type="checkbox" class="closed-hat-beat-1">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="closed-hat-beat-2">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="closed-hat-beat-3">
-            </div>
-            <div class="cell">
-              <input type="checkbox" class="closed-hat-beat-4">
-            </div>
-          </div>
-        </div>
+      <h1>Sequencer</h1>
+      <div class="inputs">
+        <label>Bars: 
+          <input type="text" id="numBars" value="4" />
+        </label>
+        <label>Beats: 
+          <input type="text" id="numBeats" value="4" />
+        </label>
+        <label>Speed:
+          <input type="range" min="40" max="220" value="120" id="numSpeed">
+        </label>
+        <button id="reset">Reset</button>
       </div>
-    </div>
-    <script src="script.js?v=1"></script>
+    <div class="container"></div>
+    <script src="script.js?v=16"></script>
   </body>
 </html>
 
