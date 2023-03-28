@@ -9,7 +9,10 @@ class Track {
     // Keep track of each beat whether it's active (true) or not (false).
     // Active beats are played. Inactive beats are silent.
     this.state = Array(totalBeats).fill(false);
-    this.audio = new Audio(soundFile); // @todo preload soundfile
+    this.audioPreload = new Audio(this.file); // @todo preload audio?
+
+    // @todo ability to mute a track
+    this.isMute = false;
   }
 
   get trackName() {
@@ -20,37 +23,51 @@ class Track {
     this.state[beatIndex] = !this.state[beatIndex];
   }
 
-  play(beatNum) {
+  _play(beatNum) {
+    if (this.isMute) return;
+
     if (this.state[beatNum]) {
-      this.audio.play();
+      const audio = new Audio(this.file);
+      audio.play();
     }
   }
+
+  onEvent(eventName, packet) {
+    if (eventName === "tick") this._play(packet.currentBeat);
+  }
+
 }
 
 class Tracks {
-  constructor(config, soundFiles = []) {
+  constructor(config) {
+    // @todo ability to define bars/beats, e.g., 7, then 5, then 7, then 8
     this.config = config;
 
-    this.tracks = [];
-    soundFiles.forEach(soundFile => {
-      this.add(soundFile);
-    });
-
-    this.pads = 0;
-    this.activeSteps = 0;
-    this.currentStep = 0;
-    this.isPlaying = false;
     this.intervalId;
 
     // List of objects who are subscribed to me. When my configuration changes,
     // I notify all of these objects about the new configuration values.
     // This is typically the UI.
     this.subscribed = [];
+
   }
 
-  add(soundFile) {
+  init() {
+    this.isPlaying = false;
+    this.currentBeat = 0; // Which beat in the entire sequence is playing now.
+    this.subscribers = {};
+    this.tracks = [];
+
+    this.config.soundFiles.forEach(soundFile => {
+      this._add(soundFile);
+    });
+  }
+
+  _add(soundFile) {
     const totalBeats = this.config.bars * this.config.beats;
-    this.tracks.push(new Track(soundFile, totalBeats));
+    const track = new Track(soundFile, totalBeats);
+    this.tracks.push(track);
+    this.subscribe("tick", track);
   }
 
   get trackNames() {
@@ -59,70 +76,139 @@ class Tracks {
     });
   }
 
-
-  toggle(options = {}) {
+  /**
+   * Toggle the active state of the given track and beat. We forward this
+   * message to the affected track object.
+   */
+  toggleBeat(options = {}) {
     this.tracks[options.trackIndex].toggle(options.beatIndex);
   }
 
-  subscribeToConfigChanges(obj) {
-    this.subscribed.push(obj);
-    return this.config;
+  play() {
+    if (this.isPlaying) {
+      // Pause the playback.
+      this.isPlaying = false;
+      this._stop_interval();
+    } else {
+      // Start/resume the playback.
+      this.isPlaying = true;
+      this._start_interval();
+    }
   }
-  notifyConfigChanged() {
-    this.subscribed.forEach(obj => {
-      obj.updateConfig(this.config);
+
+  _start_interval() {
+    const delay = 60000 / (this.config.bpm * this.config.beats);
+    this.intervalId = setInterval(() => {
+      this._broadcast("tick", { currentBeat: this.currentBeat });
+
+      this.currentBeat++;
+      if (this.currentBeat >= (this.config.bars * this.config.beats)) {
+        this.currentBeat = 0;
+      }
+    }, delay);
+  }
+
+  _stop_interval() {
+    clearInterval(this.intervalId);
+  }
+  
+  _broadcast(eventName, packet) {
+    if (!this.subscribers[eventName]) return;
+
+    this.subscribers[eventName].forEach(obj => {
+      obj.onEvent(eventName, packet);
     });
   }
+
+  subscribe(eventName, obj) {
+    if (!this.subscribers[eventName]) this.subscribers[eventName] = [];
+
+    if (!this.subscribers[eventName].includes(obj)) {
+      this.subscribers[eventName].push(obj);
+    }
+  }
+
 }
 
 class UI {
-  constructor(elRoot, tracks) {
-    this.elRoot = elRoot;
+  constructor(els, tracks) {
+    this.els = els;
     this.tracks = tracks;
-    this.config = this.tracks.subscribeToConfigChanges(this);
+    this.config = tracks.config;
+    this._bind_controls();
   }
 
-  updateConfig(newConfig) {
-    console.log("UI was told that config changed");
-    // @todo should we update display?
-    // - if bars is different, yes
-    // - if beats is different, yes
-    this.config = newConfig;
+  init() {
+    this.tracks.subscribe("tick", this);
+    this.draw();
+  }
+
+  /**
+   * Add click events to the UI controls.
+   */
+  _bind_controls() {
+    this.els.btnReset.addEventListener("click", this.onClickReset.bind(this), false);
+    this.els.btnPlay.addEventListener("click", this.onClickPlay.bind(this), false);
+    this.els.inpSpeed.addEventListener("change", this.onChangeSpeed);
+  }
+
+  onClickReset(event) {
+    if (this.tracks.isPlaying) {
+      this.onClickPlay(event);
+    }
+    this.tracks.init();
+    this.init();
+  }
+
+  onClickPlay(event) {
+    this.tracks.play();
+    this.els.btnPlay.textContent = this.tracks.isPlaying ? "Pause" : "Play";
+  }
+
+  onChangeSpeed(event) {
+    console.log("change speed");
   }
 
   draw() {
-    this.elRoot.replaceChildren();
+    this.els.root.replaceChildren();
 
     this.tracks.trackNames.forEach((name, i) => {
-      console.log("add track", name);
-      this.elRoot.appendChild(this._draw_track(name, i));
+      this.els.root.appendChild(this._draw_track(name, i));
     });
   }
 
   _draw_track(name, trackIndex) {
-    const elPad = this._el("div", "pad");
+    const elTrack = this._el("div", "track");
     const elTitle = this._el("div", "title");
     elTitle.textContent = name;
-    elPad.appendChild(elTitle);
+    elTrack.appendChild(elTitle);
 
-    const elStepsContainer = this._el("div", "steps-container");
     const count = this.config.bars * this.config.beats;
-    elStepsContainer.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
+    const elBeatsContainer = this._el("div", "beats-container");
+    elBeatsContainer.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
 
     for (let i = 0; i < count; i++) {
-      const elStep = this._el("div", "step");
-      if (i % this.config.bars === 0) elStep.classList.add("bar-first");
-
-      elStep.dataset.trackIndex = trackIndex;
-      elStep.dataset.beatIndex = i;
-      elStep.addEventListener("click", this.onClickBeat.bind(this), false);
-      elStepsContainer.appendChild(elStep);
+      elBeatsContainer.appendChild(this._draw_beat(trackIndex, i));
     }
 
-    elPad.appendChild(elStepsContainer);
-    return elPad;
+    elTrack.appendChild(elBeatsContainer);
+    return elTrack;
   }
 
+  _draw_beat(trackIndex, beatIndex) {
+    const elBeat = this._el("div", "beat");
+    if (beatIndex % this.config.bars === 0) elBeat.classList.add("bar-first");
+
+    elBeat.dataset.trackIndex = trackIndex;
+    elBeat.dataset.beatIndex = beatIndex;
+    elBeat.addEventListener("click", this.onClickBeat.bind(this), false);
+
+    return elBeat;
+  }
+
+  /**
+   * Create a new DOM element and apply the given class name.
+   */
   _el(type, className) {
     const el = document.createElement(type);
     el.classList.add(className);
@@ -130,15 +216,35 @@ class UI {
   }
 
   /**
-   * A specific beat of a specific track was clicked. Toggle its on/off value.
+   * User clicked a specific beat of a specific track. Toggle its value.
+   *
+   * @param object event - the clicked element from the event listener
    */
   onClickBeat(event) {
     const trackIndex = parseInt(event.target.dataset.trackIndex);
     const beatIndex = parseInt(event.target.dataset.beatIndex);
 
-    this.tracks.toggle({ trackIndex: trackIndex, beatIndex: beatIndex });
+    this.tracks.toggleBeat({ trackIndex: trackIndex, beatIndex: beatIndex });
 
     event.target.classList.toggle("active");
+  }
+
+  onEvent(eventName, packet) {
+    if (eventName === "tick") this._show_active_beat(packet.currentBeat);
+  }
+
+  _show_active_beat(currentBeat) {
+    // Remove all current highlights.
+    const elsCurrent = document.querySelectorAll(".beat.highlight");
+    elsCurrent.forEach(el => {
+      el.classList.remove("highlight");
+    });
+
+    // Add highlights to the current beat.
+    const elsActive = document.querySelectorAll(`.beat[data-beat-index="${currentBeat}"]`);
+    elsActive.forEach(el => {
+      el.classList.add("highlight");
+    });
   }
 }
 
@@ -153,148 +259,18 @@ const config = {
   bars: 4,
   beats: 4,
   bpm: 120,
+  soundFiles: soundFiles,
 };
-const tracks = new Tracks(config, soundFiles);
-const ui = new UI(document.querySelector(".container"), tracks);
-ui.draw();
+const tracks = new Tracks(config);
+tracks.init();
 
-
-let numSteps;
-let numBars;
-let numSpeed;
-
-let pads;
-let activeSteps;
-let currentStep = 0;
-let isPlaying = false;
-let intervalId;
-
-function init(buttons) {
-  numSteps = document.getElementById("numBeats").value;
-  numBars = document.getElementById("numBars").value;
-  numSpeed = buttons.speed.value;
-  pads = [];
-  activeSteps = [];
-  currentStep = 0;
-
-  const container = document.querySelector(".container");
-  container.replaceChildren();
-
-  // Create the pads
-  for (let i = 0; i < soundFiles.length; i++) {
-    const pad = document.createElement("div");
-    pad.classList.add("pad");
-
-    const title = document.createElement("div");
-    title.classList.add("title");
-    title.textContent = soundFiles[i].split("/").pop().split(".")[0];
-    pad.appendChild(title);
-
-    const stepsContainer = document.createElement("div");
-    stepsContainer.classList.add("steps-container");
-
-    const count = numSteps * numBars;
-    stepsContainer.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
-
-    for (let j = 0; j < numSteps * numBars; j++) {
-      const step = document.createElement("div");
-      step.classList.add("step");
-      if (j % numSteps === 0) step.classList.add("bar-first");
-
-      step.dataset.soundIndex = i;
-      step.dataset.stepIndex = j;
-      step.addEventListener("click", toggleStep);
-      stepsContainer.appendChild(step);
-    }
-
-    pad.appendChild(stepsContainer);
-    container.appendChild(pad);
-
-    pads.push(pad);
-    activeSteps.push(Array(numSteps * numBars).fill(false));
-  }
-
-}
-
-function toggleStep(event) {
-  const soundIndex = parseInt(event.target.dataset.soundIndex);
-  const stepIndex = parseInt(event.target.dataset.stepIndex);
-  activeSteps[soundIndex][stepIndex] = !activeSteps[soundIndex][stepIndex];
-  event.target.classList.toggle("active");
-}
-
-function reset() {
-  stop();
-  init();
-}
-
-function stop() {
-  clearInterval(intervalId);
-  isPlaying = false;
-  this.textContext = "Play";
-}
-
-function togglePlayPause() {
-  if (isPlaying) {
-    stop();
-  } else {
-    currentStep = 0;
-    restartInterval();
-    isPlaying = true;
-    this.textContent = "Pause";
-  }
-}
-
-function restartInterval() {
-  numSpeed = document.getElementById("numSpeed").value;
-  intervalId = setInterval(() => {
-    // Play active pads for the current step
-    for (let i = 0; i < pads.length; i++) {
-      if (activeSteps[i][currentStep]) {
-        const audio = new Audio(soundFiles[i]);
-        audio.play();
-      }
-    }
-
-    // Update the step highlight
-    for (let i = 0; i < pads.length; i++) {
-      const steps = pads[i].querySelectorAll(".step");
-      steps[currentStep].classList.add("highlight");
-      if (currentStep === 0) {
-        steps[steps.length - 1].classList.remove("highlight");
-      } else {
-        steps[currentStep - 1].classList.remove("highlight");
-      }
-    }
-
-    // Increment the step
-    currentStep++;
-    if (currentStep === numSteps * numBars) {
-      currentStep = 0;
-    }
-
-  }, 60000 / (numSpeed * numSteps));
-}
-
-function changeSpeed() {
-  console.log("range changed");
-  clearInterval(intervalId);
-  restartInterval();
-}
-
-
-const bindButtons = function() {
-  let buttons = {
-    reset: document.getElementById("reset"),
-    speed: document.getElementById("numSpeed"),
-    playPause: document.getElementById("playPause"),
-  };
-  buttons.reset.addEventListener("click", reset);
-  buttons.speed.addEventListener("change", changeSpeed);
-  buttons.playPause.addEventListener("click", togglePlayPause);
-
-  return buttons;
+const els = {
+  root: document.querySelector(".container"),
+  btnReset: document.getElementById("reset"),
+  btnPlay: document.getElementById("playPause"),
+  inpBars: document.getElementById("numBars"),
+  inpBeats: document.getElementById("numBeats"),
+  inpSpeed: document.getElementById("numSpeed"),
 };
-
-//init(bindButtons());
-
+const ui = new UI(els, tracks);
+ui.init();
