@@ -15,7 +15,6 @@ const config = {
   soundFiles: soundFiles,
 };
 const tracks = new Tracks(config);
-tracks.init();
 
 const els = {
   root: document.querySelector(".container"),

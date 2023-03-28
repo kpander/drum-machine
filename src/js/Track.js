@@ -1,6 +1,8 @@
 "use strict";
 /*global document, Audio*/
 
+// revise to use: https://web.dev/webaudio-intro/
+
 class Track {
   constructor(soundFile, totalBeats) {
     this.file = soundFile;

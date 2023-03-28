@@ -10,6 +10,7 @@ class UI {
   }
 
   init() {
+    this.tracks.init();
     this.tracks.subscribe("tick", this);
     this.draw();
   }
@@ -27,7 +28,6 @@ class UI {
     if (this.tracks.isPlaying) {
       this.onClickPlay(event);
     }
-    this.tracks.init();
     this.init();
   }
 
