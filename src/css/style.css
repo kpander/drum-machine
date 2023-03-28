@@ -1,0 +1,76 @@
+/* Reset styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Layout styles */
+body {
+  font-family: sans-serif;
+  background-color: #0f0f0f;
+  color: #fff;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+h1 {
+  margin: .5em;
+}
+
+.inputs input {
+  width: 50px;
+  text-align: center;
+  font-size: 26px;
+  margin-right: .5em;
+}
+
+.inputs input[type="range"] {
+  width: 200px;
+}
+
+.inputs button {
+  margin: 1em;
+  padding: .5em 1em;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 95%;
+  height: auto;
+  margin-top: 30px;
+}
+
+/* Step Sequencer */
+.beats-container {
+  display: grid;
+  /* grid-template-columns: repeat(16, 1fr); set dynamically via bars/beats */
+}
+
+.beat {
+  border: 1px solid black;
+  height: 50px;
+  width: 50px;
+  background-color: #444;
+  cursor: pointer;
+  border: 2px solid black;
+  border-radius: 25px;
+}
+
+.beat.bar-first {
+  border: 2px solid #999;
+}
+
+.beat.active {
+  background-color: #ffa;
+}
+
+.beat.highlight {
+  border: 2px solid #afa;
+}
+
