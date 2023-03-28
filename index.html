@@ -2,25 +2,33 @@
 <html>
   <head>
     <title>Sequencer</title>
-    <link rel="stylesheet" type="text/css" href="style.css?v=31">
+    <link rel="stylesheet" type="text/css" href="src/css/style.css?v=31">
   </head>
   <body>
-      <h1>Sequencer</h1>
-      <div class="inputs">
-        <button id="reset">Reset</button>
-        <label>Bars: 
-          <input type="text" id="numBars" value="4" />
-        </label>
-        <label>Beats: 
-          <input type="text" id="numBeats" value="4" />
-        </label>
-        <label>Speed:
-          <input type="range" min="40" max="220" value="120" id="numSpeed">
-        </label>
-        <button id="playPause" class="play-pause-button">Play</button>
-      </div>
+
+    <h1>Sequencer</h1>
+
+    <div class="inputs">
+      <button id="reset">Reset</button>
+      <label>Bars: 
+        <input type="text" id="numBars" value="4" />
+      </label>
+      <label>Beats: 
+        <input type="text" id="numBeats" value="4" />
+      </label>
+      <label>Speed:
+        <input type="range" min="40" max="220" value="120" id="numSpeed">
+      </label>
+      <button id="playPause" class="play-pause-button">Play</button>
+    </div>
+
     <div class="container"></div>
-    <script src="script.js?v=126"></script>
+
+    <script src="src/js/Track.js?v=1"></script>
+    <script src="src/js/Tracks.js?v=1"></script>
+    <script src="src/js/UI.js?v=1"></script>
+    <script src="src/js/app.js?v=1"></script>
+
   </body>
 </html>
 
