@@ -59,6 +59,14 @@ class Tracks {
     }
   }
 
+  setSpeed(newSpeed) {
+    this.config.bpm = newSpeed;
+    if (this.isPlaying) {
+      this._stop_interval();
+      this._start_interval();
+    }
+  }
+
   _start_interval() {
     const delay = 60000 / (this.config.bpm * this.config.beats);
     this.intervalId = setInterval(() => {

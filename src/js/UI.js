@@ -20,7 +20,7 @@ class UI {
   _bind_controls() {
     this.els.btnReset.addEventListener("click", this.onClickReset.bind(this), false);
     this.els.btnPlay.addEventListener("click", this.onClickPlay.bind(this), false);
-    this.els.inpSpeed.addEventListener("change", this.onChangeSpeed);
+    this.els.inpSpeed.addEventListener("change", this.onChangeSpeed.bind(this), false);
   }
 
   onClickReset(event) {
@@ -37,7 +37,7 @@ class UI {
   }
 
   onChangeSpeed(event) {
-    console.log("change speed");
+    this.tracks.setSpeed(this.els.inpSpeed.value);
   }
 
   draw() {
