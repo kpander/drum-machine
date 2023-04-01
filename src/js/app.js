@@ -1,28 +1,25 @@
 "use strict";
-/*global document, Audio*/
+/*global document, State, UI*/
 
-const soundFiles = [
-  "sounds/kick.mp3",
-  "sounds/snare.mp3",
-  "sounds/open-hat.mp3",
-  "sounds/closed-hat.mp3",
-];
-
-const config = {
-  bars: 4,
-  beats: 4,
-  bpm: 120,
-  soundFiles: soundFiles,
+const totalBeats = 4 * 4;
+const defaults = {
+  bars: [ 4, "int" ],
+  beats: [ 4, "int" ],
+  bpm: [ 120, "int" ],
+  t1sound: [ "d", "string" ],
+  t2sound: [ "c", "string" ],
+  t3sound: [ "b", "string" ],
+  t4sound: [ "a", "string" ],
+  t1state: [ Array(totalBeats).fill(true), "array" ],
+  t2state: [ Array(totalBeats).fill(false), "array" ],
+  t3state: [ Array(totalBeats).fill(true), "array" ],
+  t4state: [ Array(totalBeats).fill(false), "array" ],
 };
-const tracks = new Tracks(config);
+const state = new State(document.URL, defaults);
 
 const els = {
   root: document.querySelector(".container"),
-  btnReset: document.getElementById("reset"),
-  btnPlay: document.getElementById("playPause"),
-  inpBars: document.getElementById("numBars"),
-  inpBeats: document.getElementById("numBeats"),
-  inpSpeed: document.getElementById("numSpeed"),
+  controls: document.querySelector(".inputs"),
 };
-const ui = new UI(els, tracks);
+const ui = new UI(state, els);
 ui.init();

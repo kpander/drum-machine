@@ -1,20 +1,39 @@
 "use strict";
-/*global document, Audio*/
+/*global Audio*/
 
 // revise to use: https://web.dev/webaudio-intro/
 
 class Track {
-  constructor(soundFile, totalBeats) {
-    this.file = soundFile;
-    this.name = this.file.split("/").pop().split(".")[0];
+  /**
+   * @param object state
+   *   the singleton State class instance
+   * @param int trackIndex
+   *   which track number we are, used to identify our key in the State object
+   * @param string trackSound
+   *   character, index to the sound file for this track
+   * @param array beatStates
+   *   array of booleans, 1 for each beat in the track.
+   *   true=on (plays the sound), false=off (silent)
+   */
+  constructor(state, trackIndex, trackSound, beatStates) {
+    this._state = state;
+    this._trackIndex = trackIndex;
+    this._file = this._get_soundfile(trackSound);
+    this.beatStates = beatStates;
 
-    // Keep track of each beat whether it's active (true) or not (false).
-    // Active beats are played. Inactive beats are silent.
-    this.state = Array(totalBeats).fill(false);
-    this.audioPreload = new Audio(this.file); // @todo preload audio?
+    this.name = this._file.split("/").pop().split(".")[0];
+    this._audio_preload = new Audio(this._file); // @todo preload audio?
+  }
 
-    // @todo ability to mute a track
-    this.isMute = false;
+  _get_soundfile(key) {
+    const soundFiles = {
+      "a": "sounds/kick.mp3",
+      "b": "sounds/snare.mp3",
+      "c": "sounds/open-hat.mp3",
+      "d": "sounds/closed-hat.mp3",
+    };
+
+    return soundFiles[key] || false;
   }
 
   get trackName() {
@@ -22,14 +41,15 @@ class Track {
   }
 
   toggle(beatIndex) {
-    this.state[beatIndex] = !this.state[beatIndex];
+    this.beatStates[beatIndex] = !this.beatStates[beatIndex];
+
+    const key = `t${this._trackIndex}state`;
+    this._state.setValue(key, this.beatStates);
   }
 
   _play(beatNum) {
-    if (this.isMute) return;
-
-    if (this.state[beatNum]) {
-      const audio = new Audio(this.file);
+    if (this.beatStates[beatNum] === true) {
+      const audio = new Audio(this._file);
       audio.play();
     }
   }

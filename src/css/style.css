@@ -36,6 +36,9 @@ h1 {
   margin: 1em;
   padding: .5em 1em;
 }
+.inputs label > input {
+  margin-left: .25em;
+}
 
 .container {
   display: flex;
