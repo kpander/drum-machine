@@ -1,18 +1,16 @@
 "use strict";
-/*global document, Audio*/
+/*global Track*/
 
 class Tracks {
-  constructor(config) {
-    // @todo ability to define bars/beats, e.g., 7, then 5, then 7, then 8
-    this.config = config;
+  constructor(state) {
+    this._state = state;
 
-    this.intervalId;
+    this._interval_id;
 
     // List of objects who are subscribed to me. When my configuration changes,
     // I notify all of these objects about the new configuration values.
     // This is typically the UI.
     this.subscribed = [];
-
   }
 
   init() {
@@ -21,14 +19,20 @@ class Tracks {
     this.subscribers = {};
     this.tracks = [];
 
-    this.config.soundFiles.forEach(soundFile => {
-      this._add(soundFile);
-    });
+    // Create each of the defined tracks. Max 8 tracks possible.
+    for (let trackIndex = 1; trackIndex < 9; trackIndex++) {
+      const keyState = `t${trackIndex}state`;
+      const beatStates = this._state.getValue(keyState);
+      if (beatStates !== false) {
+        const keySound = `t${trackIndex}sound`;
+        const trackSound = this._state.getValue(keySound);
+        this._add(trackIndex, trackSound, beatStates);
+      }
+    }
   }
 
-  _add(soundFile) {
-    const totalBeats = this.config.bars * this.config.beats;
-    const track = new Track(soundFile, totalBeats);
+  _add(trackIndex, trackSound, trackState) {
+    const track = new Track(this._state, trackIndex, trackSound, trackState);
     this.tracks.push(track);
     this.subscribe("tick", track);
   }
@@ -49,18 +53,16 @@ class Tracks {
 
   play() {
     if (this.isPlaying) {
-      // Pause the playback.
-      this.isPlaying = false;
+      this.isPlaying = false; // Pause
       this._stop_interval();
     } else {
-      // Start/resume the playback.
-      this.isPlaying = true;
+      this.isPlaying = true;  // Resume
       this._start_interval();
     }
   }
 
   setSpeed(newSpeed) {
-    this.config.bpm = newSpeed;
+    this._state.setValue("bpm", newSpeed);
     if (this.isPlaying) {
       this._stop_interval();
       this._start_interval();
@@ -68,19 +70,24 @@ class Tracks {
   }
 
   _start_interval() {
-    const delay = 60000 / (this.config.bpm * this.config.beats);
-    this.intervalId = setInterval(() => {
+    const bpm = this._state.getValue("bpm");
+    const bars = this._state.getValue("bars");
+    const beats = this._state.getValue("beats");
+    const totalBeats = bars * beats;
+    const delay = 60000 / (bpm * beats);
+
+    this._interval_id = setInterval(() => {
       this._broadcast("tick", { currentBeat: this.currentBeat });
 
       this.currentBeat++;
-      if (this.currentBeat >= (this.config.bars * this.config.beats)) {
+      if (this.currentBeat >= totalBeats) {
         this.currentBeat = 0;
       }
     }, delay);
   }
 
   _stop_interval() {
-    clearInterval(this.intervalId);
+    clearInterval(this._interval_id);
   }
   
   _broadcast(eventName, packet) {
