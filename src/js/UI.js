@@ -1,5 +1,5 @@
 "use strict";
-/*global document, Tracks*/
+/*global document, Tracks, Clipboard, location, alert*/
 
 class UI {
   constructor(state, els) {
@@ -15,10 +15,11 @@ class UI {
   get _ids() {
     return {
       btnReset: "reset",
-      btnPlay: "playPause",
       inpBars: "numBars",
       inpBeats: "numBeats",
       inpSpeed: "numSpeed",
+      btnPlay: "playPause",
+      btnCopy: "copyUrl",
     };
   }
 
@@ -38,6 +39,9 @@ class UI {
       },
       { type: "button", label: "Play", props: 
         { id: this._ids.btnPlay, class: "play-pause-button" } 
+      },
+      { type: "button", label: "Copy URL", props: 
+        { id: this._ids.btnCopy, class: "copy-url" } 
       },
     ];
   }
@@ -75,6 +79,7 @@ class UI {
   _bind_controls() {
     this._els.btnReset.addEventListener("click", this.onClickReset.bind(this), false);
     this._els.btnPlay.addEventListener("click", this.onClickPlay.bind(this), false);
+    this._els.btnCopy.addEventListener("click", this.onClickCopy.bind(this), false);
     this._els.inpSpeed.addEventListener("change", this.onChangeSpeed.bind(this), false);
   }
 
@@ -88,6 +93,12 @@ class UI {
   onClickPlay(/*event*/) {
     this.tracks.play();
     this._els.btnPlay.textContent = this.tracks.isPlaying ? "Pause" : "Play";
+  }
+
+  onClickCopy(/*event*/) {
+    const url = this._state.encodeToUrl(location.href);
+    Clipboard.copy(url);
+    alert("Copied URL to system clipboard");
   }
 
   onChangeSpeed(/*event*/) {
