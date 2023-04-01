@@ -14,6 +14,7 @@ class State {
   constructor(urlString = "", defaults = {}) {
     this._placeholder_url = "https://domain.com";
     this._defaults = defaults;
+    this.MAX_TRACKS = 8;
 
     this.data = {};
     this.init(urlString);
@@ -26,7 +27,7 @@ class State {
       this.data[key] = this._defaults[key][0];
     });
     this.decodeFromUrl(urlString);
-    // @todo add validation to check mins/max/valid chars/beat states is correct duration/etc.
+    this._validate();
   }
 
   getValue(key) {
@@ -88,5 +89,56 @@ class State {
     });
   }
 
+  /**
+   * Validate the current state. Replace any invalid values with the defaults.
+   *
+   * @todo consider whether validation should be so strict? e.g., if the number
+   * of beats is less or more than expected, should we pad/trim as needed
+   * rather than just throwing away the entire track?
+   */
+  _validate() {
+    // Confirm the bars/beats/bpm key values are numbers.
+    // Enforce min/max values.
+    [ "bars", "beats", "bpm" ].forEach(key => {
+      if (isNaN(this.data[key])) this.data[key] = this._defaults[key][0];
+
+      if (this.data[key] < this._defaults[key][2].min) {
+        this.data[key] = this._defaults[key][2].min;
+      } else if (this.data[key] > this._defaults[key][2].max) {
+        this.data[key] = this._defaults[key][2].max;
+      }
+    });
+    const totalBeats = this.data.bars * this.data.beats;
+
+    const keys = Object.keys(this._defaults);
+    for (let i = 0; i <= this.MAX_TRACKS; i++) {
+      const keySound = `t${i}sound`;
+      const keyState = `t${i}state`;
+      let isValidTrack = true;
+
+      if (keys.includes(keySound) && keys.includes(keyState)) {
+        if (!this._defaults[keySound][2].options.includes(this.data[keySound])) {
+          // The given sound for this track was invalid. Ignore the track
+          // entirely.
+          isValidTrack = false;
+        } else if (this.data[keyState].length === 0) {
+          this.data[keyState] = Array(totalBeats).fill(false);
+        } else if (this.data[keyState].length !== totalBeats) {
+          // We found an unexpected number of beats in this track. Ignore the
+          // track entirely.
+          isValidTrack = false;
+        }
+      } else {
+        // We're missing either the sound or the state. So ignore the track
+        // entirely.
+        isValidTrack = false;
+      }
+
+      if (!isValidTrack) {
+        delete this.data[keySound];
+        delete this.data[keyState];
+      }
+    }
+  }
 }
 
