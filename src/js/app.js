@@ -27,4 +27,6 @@ ui.init();
 
 http://localhost:8080/?bars=4&beats=3&bpm=120&t1sound=d&t2sound=c&t3sound=b&t4sound=a&t1state=100010001000&t2state=000000000100&t3state=010000010100&t4state=001001100001
 
+http://localhost:8080/?bars=4&beats=4&bpm=120&t1sound=d&t2sound=c&t3sound=b&t4sound=a&t1state=0100100000011010&t2state=0000000000000000&t3state=0000100000001000&t4state=1000000110100010
+
 */
