@@ -1,5 +1,5 @@
 "use strict";
-/*global Track*/
+/*global Track, AudioContext*/
 
 class Tracks {
   constructor(state) {
@@ -11,6 +11,7 @@ class Tracks {
     // I notify all of these objects about the new configuration values.
     // This is typically the UI.
     this.subscribed = [];
+    this._audio = null;
   }
 
   init() {
@@ -19,7 +20,7 @@ class Tracks {
     this.subscribers = {};
     this.tracks = [];
 
-    // Create each of the defined tracks. Max 8 tracks possible.
+    // Create each of the defined tracks.
     for (let trackIndex = 0; trackIndex < this._state.MAX_TRACKS; trackIndex++) {
       const keyState = `t${trackIndex}state`;
       const beatStates = this._state.getValue(keyState);
@@ -52,12 +53,25 @@ class Tracks {
   }
 
   play() {
+    if (this._audio === null) this._initialize_audio();
+
     if (this.isPlaying) {
       this.isPlaying = false; // Pause
       this._stop_interval();
     } else {
       this.isPlaying = true;  // Resume
       this._start_interval();
+    }
+  }
+
+  /**
+   * Now that the user has pressed the "play" button, initialize the browser's
+   * audio API. Ask each track to preload its audio file.
+   */
+  async _initialize_audio() {
+    this._audio = new AudioContext();
+    for (const track of this.tracks) {
+      await track.preloadAudio(this._audio);
     }
   }
 
