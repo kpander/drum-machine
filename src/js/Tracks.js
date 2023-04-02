@@ -20,7 +20,7 @@ class Tracks {
     this.tracks = [];
 
     // Create each of the defined tracks. Max 8 tracks possible.
-    for (let trackIndex = 1; trackIndex < 9; trackIndex++) {
+    for (let trackIndex = 0; trackIndex < this._state.MAX_TRACKS; trackIndex++) {
       const keyState = `t${trackIndex}state`;
       const beatStates = this._state.getValue(keyState);
       if (beatStates !== false) {
@@ -71,10 +71,10 @@ class Tracks {
 
   _start_interval() {
     const bpm = this._state.getValue("bpm");
-    const bars = this._state.getValue("bars");
-    const beats = this._state.getValue("beats");
-    const totalBeats = bars * beats;
-    const delay = 60000 / (bpm * beats);
+    const totalBeats = this._state.getValue("barbeats").reduce((a, b) => {
+      return a + b;
+    }, 0);
+    const delay = 60000 / (bpm * 4);
 
     this._interval_id = setInterval(() => {
       this._broadcast("tick", { currentBeat: this.currentBeat });

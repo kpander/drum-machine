@@ -22,9 +22,9 @@ h1 {
 }
 
 .inputs input {
-  width: 50px;
+  width: 150px;
   text-align: center;
-  font-size: 26px;
+  font-size: 18px;
   margin-right: .5em;
 }
 

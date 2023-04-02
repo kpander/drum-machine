@@ -15,8 +15,8 @@ class UI {
   get _ids() {
     return {
       btnReset: "reset",
-      inpBars: "numBars",
-      inpBeats: "numBeats",
+      inpBarBeats: "numBeats",
+      btnBarBeats: "barBeats",
       inpSpeed: "numSpeed",
       btnPlay: "playPause",
       btnCopy: "copyUrl",
@@ -28,11 +28,11 @@ class UI {
       { type: "button", label: "Reset", props: 
         { id: this._ids.btnReset } 
       },
-      { type: "input", label: "Bars:", props: 
-        { id: this._ids.inpBars, type: "text", value: this._state.getValue("bars") }
+      { type: "input", label: "Beats per bar:", props: 
+        { id: this._ids.inpBarBeats, type: "text", value: this._state.getValue("barbeats").join("/") } 
       },
-      { type: "input", label: "Beats:", props: 
-        { id: this._ids.inpBeats, type: "text", value: this._state.getValue("beats") } 
+      { type: "button", label: "Apply", props: 
+        { id: this._ids.btnBarBeats, class: "bar-beats-button" } 
       },
       { type: "input", label: "Speed:", props: 
         { id: this._ids.inpSpeed, type: "range", value: this._state.getValue("bpm"), min: "40", max: "220" }
@@ -80,12 +80,13 @@ class UI {
     this._els.btnReset.addEventListener("click", this.onClickReset.bind(this), false);
     this._els.btnPlay.addEventListener("click", this.onClickPlay.bind(this), false);
     this._els.btnCopy.addEventListener("click", this.onClickCopy.bind(this), false);
+    this._els.btnBarBeats.addEventListener("click", this.onClickBarBeats.bind(this), false);
     this._els.inpSpeed.addEventListener("change", this.onChangeSpeed.bind(this), false);
   }
 
-  onClickReset(event) {
+  onClickReset(/*event*/) {
     if (this.tracks.isPlaying) {
-      this.onClickPlay(event);
+      this.onClickPlay();
     }
     this.init();
   }
@@ -103,6 +104,11 @@ class UI {
 
   onChangeSpeed(/*event*/) {
     this.tracks.setSpeed(this._els.inpSpeed.value);
+  }
+
+  onClickBarBeats(/*event*/) {
+    this._state.setValue("barbeats", this._els.inpBarBeats.value);
+    this.onClickReset();
   }
 
   init() {
@@ -127,9 +133,9 @@ class UI {
     elTitle.textContent = name;
     elTrack.appendChild(elTitle);
 
-    const bars = this._state.getValue("bars");
-    const beats = this._state.getValue("beats");
-    const totalBeats = bars * beats;
+    const totalBeats = this._state.getValue("barbeats").reduce((a, b) => {
+      return a + b;
+    }, 0);
     const elBeatsContainer = this._el("div", "beats-container");
     elBeatsContainer.style.gridTemplateColumns = `repeat(${totalBeats}, 1fr)`;
 
@@ -142,12 +148,13 @@ class UI {
   }
 
   _draw_beat(trackIndex, beatIndex, beatState) {
-    const bars = this._state.getValue("bars");
     const elBeat = this._el("div", "beat");
     if (beatState === true) {
       elBeat.classList.add("active");
     }
-    if (beatIndex % bars === 0) elBeat.classList.add("bar-first");
+
+    const barStarts = this._get_bar_starts();
+    if (barStarts.includes(beatIndex)) elBeat.classList.add("bar-first");
 
     elBeat.dataset.trackIndex = trackIndex;
     elBeat.dataset.beatIndex = beatIndex;
@@ -155,6 +162,32 @@ class UI {
 
     return elBeat;
   }
+
+  /**
+   * Construct an array of numbers. Each number represents the starting
+   * beat number of a different bar. If our beat configuration was 3/5/4
+   * (a bar of 3 beats, then 5 beats, then 4 beats), our bar starts array
+   * would be:
+   *   [ 0, 3, 8 ]
+   *   - 0 = the first beat (0-indexed, the beginning of the 3 beat bar)
+   *   - 3 = the 4th beat (the beginning of the 5 beat bar)
+   *   - 8 = the 9th beat (the beginning of the 4 beat bar)
+   */
+  _get_bar_starts() {
+    let barbeats = this._state.getValue("barbeats");
+
+    let starts = [];
+    let count = 0;
+
+    starts.push(count);
+    while (barbeats.length) {
+      count += barbeats.shift();
+      starts.push(count);
+    }
+
+    return starts;
+  }
+
 
   /**
    * Create a new DOM element and apply the given class name.
