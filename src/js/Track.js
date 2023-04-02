@@ -1,8 +1,6 @@
 "use strict";
 /*global Audio*/
 
-// revise to use: https://web.dev/webaudio-intro/
-
 class Track {
   /**
    * @param object state
@@ -22,7 +20,19 @@ class Track {
     this.beatStates = beatStates;
 
     this.name = this._file.split("/").pop().split(".")[0];
-    this._audio_preload = new Audio(this._file); // @todo preload audio?
+
+    this._audio = null;
+    this._audio_buffer = null;
+  }
+
+  /**
+   * Preload our track's sound file into a buffer, prior to any playback.
+   */
+  async preloadAudio(audioContext) {
+    this._audio = audioContext;
+    const response = await fetch(this._file);
+    const arrayBuffer = await response.arrayBuffer();
+    this._audio_buffer = await this._audio.decodeAudioData(arrayBuffer);
   }
 
   _get_soundfile(key) {
@@ -49,8 +59,10 @@ class Track {
 
   _play(beatNum) {
     if (this.beatStates[beatNum] === true) {
-      const audio = new Audio(this._file);
-      audio.play();
+      const source = this._audio.createBufferSource();
+      source.buffer = this._audio_buffer;
+      source.connect(this._audio.destination);
+      source.start();
     }
   }
 
