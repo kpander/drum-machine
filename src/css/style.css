@@ -43,37 +43,68 @@ h1 {
 .container {
   width: 95%;
   height: auto;
+  margin-top: 1em;
+}
+
+.track {
+  padding: 0 0 0.75em;
+  margin-bottom: 1.5em;
+}
+
+.track .title {
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 60%;
+  position: relative;
+  top: -1.2em;
+  background: #fc9;
+  color: black;
+  padding: .5em 1em .25em;
+  border-radius: 10px;
 }
 
 /* Step Sequencer */
 .beats-container {
   display: grid;
-  grid-gap: 3px;
+  grid-gap: 1px;
   /* grid-template-columns: repeat(16, 1fr); set dynamically via bars/beats */
 }
 
 .beat {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  aspect-ratio: 1/1;
+  aspect-ratio: 1/1.25;
 
-  border: 1px solid black;
-  background-color: #444;
+  background: rgb(68,68,68);
+  background: linear-gradient(180deg, rgba(68,68,68,1) 0%, rgba(153,153,153,1) 35%, rgba(34,34,34,1) 100%);
+
   cursor: pointer;
-  border: 2px solid black;
-  border-radius: 25px;
+  border-radius: 5px;
 }
 
 .beat.bar-first {
   border: 2px solid #999;
 }
 
-.beat.active {
-  background-color: #ffa;
-}
 
 .beat.highlight {
-  background-color: white;
+  background: white;
+}
+
+.beat:after {
+  position: absolute;
+  width: 75%;
+  height: 25%;
+  background: black;
+  top: 15%;
+  border-radius: 5px;
+  border-top: 3px solid #222;
+  border-bottom: 1px solid #ccc;
+  content: "";
+}
+.beat.active:after {
+  background: green;
 }
 
