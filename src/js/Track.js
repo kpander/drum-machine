@@ -23,6 +23,7 @@ class Track {
 
     this._audio = null;
     this._audio_buffer = null;
+    this._audio_gain = null;
   }
 
   /**
@@ -33,6 +34,11 @@ class Track {
     const response = await fetch(this._file);
     const arrayBuffer = await response.arrayBuffer();
     this._audio_buffer = await this._audio.decodeAudioData(arrayBuffer);
+
+    // Create a gain node to control volume for this track.
+    this._audio_gain = this._audio.createGain();
+    this._audio_gain.gain.value = 1.0; // @todo use a given default value
+    this._audio_gain.connect(this._audio.destination);
   }
 
   _get_soundfile(key) {
@@ -57,11 +63,21 @@ class Track {
     this._state.setValue(key, this.beatStates);
   }
 
+  setVolume(newVolume) {
+    if (this._audio !== null) {
+      this._audio_gain.gain.value = newVolume;
+    }
+
+    const key = `t${this._trackIndex}vol`;
+    this._state.setValue(key, newVolume);
+  }
+
   _play(beatNum) {
     if (this.beatStates[beatNum] === true) {
       const source = this._audio.createBufferSource();
       source.buffer = this._audio_buffer;
       source.connect(this._audio.destination);
+      source.connect(this._audio_gain);
       source.start();
     }
   }

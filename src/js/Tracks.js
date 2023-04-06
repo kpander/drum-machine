@@ -83,6 +83,10 @@ class Tracks {
     }
   }
 
+  setVolume(trackIndex, newVolume) {
+    this.tracks[trackIndex].setVolume(newVolume);
+  }
+
   _start_interval() {
     const bpm = this._state.getValue("bpm");
     const totalBeats = this._state.getValue("barbeats").reduce((a, b) => {
