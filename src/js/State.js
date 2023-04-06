@@ -90,6 +90,9 @@ class State {
         if (this._defaults[key][1] === "int") {
           // This value should be an integer.
           this.data[key] = parseInt(this.data[key], 10);
+        } else if (this._defaults[key][1] === "float") {
+          // This value should be a number.
+          this.data[key] = Number(this.data[key]);
         } else if (key === "barbeats") {
           this.data[key] = this.data[key].split("/").map(count => {
             return parseInt(count, 10);
@@ -108,22 +111,20 @@ class State {
    * Validate the current state. Replace any invalid values with the defaults.
    */
   _validate() {
-    this._validate_bpm();
+    this._validate_number("bpm");
     this._validate_barbeats();
     this._validate_tracks();
   }
 
-  _validate_bpm() {
+  _validate_number(key) {
     // Confirm the state values that are numbers and enforce min/max values.
-    [ /*"bars", "beats",*/ "bpm" ].forEach(key => {
-      if (isNaN(this.data[key])) this.data[key] = this._defaults[key][0];
+    if (isNaN(this.data[key])) this.data[key] = this._defaults[key][0];
 
-      if (this.data[key] < this._defaults[key][2].min) {
-        this.data[key] = this._defaults[key][2].min;
-      } else if (this.data[key] > this._defaults[key][2].max) {
-        this.data[key] = this._defaults[key][2].max;
-      }
-    });
+    if (this.data[key] < this._defaults[key][2].min) {
+      this.data[key] = this._defaults[key][2].min;
+    } else if (this.data[key] > this._defaults[key][2].max) {
+      this.data[key] = this._defaults[key][2].max;
+    }
   }
 
   _validate_barbeats() {
@@ -144,6 +145,7 @@ class State {
     for (let i = 0; i < this.MAX_TRACKS; i++) {
       const keySound = `t${i}sound`;
       const keyState = `t${i}state`;
+      const keyVol = `t${i}vol`;
 
       // We didn't have a track sound defined. Use the default for this index.
       if (!this.getValue(keySound)) {
@@ -166,6 +168,8 @@ class State {
           this.setValue(keyState, newValue);
         }
       }
+
+      this._validate_number(keyVol);
     }
   }
 }

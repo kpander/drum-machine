@@ -106,6 +106,12 @@ class UI {
     this.tracks.setSpeed(this._els.inpSpeed.value);
   }
 
+  onChangeTrackVolume(event) {
+    const trackIndex = event.target.getAttribute("trackIndex");
+    const newVolume = Number(event.target.value);
+    this.tracks.setVolume(trackIndex, newVolume);
+  }
+
   onClickBarBeats(/*event*/) {
     this._state.setValue("barbeats", this._els.inpBarBeats.value);
     this.onClickReset();
@@ -129,9 +135,12 @@ class UI {
 
   _draw_track(name, trackIndex, beatStates) {
     const elTrack = this._el("div", "track");
-    const elTitle = this._el("div", "title");
-    elTitle.textContent = name;
-    elTrack.appendChild(elTitle);
+    
+    const elTrackHead = this._el("div", "track-head");
+    elTrackHead.appendChild(this._draw_track_title(name));
+    elTrackHead.appendChild(this._draw_track_volume(trackIndex));
+
+    elTrack.appendChild(elTrackHead);
 
     const totalBeats = this._state.getValue("barbeats").reduce((a, b) => {
       return a + b;
@@ -145,6 +154,36 @@ class UI {
 
     elTrack.appendChild(elBeatsContainer);
     return elTrack;
+  }
+
+  _draw_track_title(name) {
+    const el = this._el("div", "title");
+    el.textContent = name;
+
+    return el;
+  }
+
+  /**
+   * Create a volume slider for a track.
+   */
+  _draw_track_volume(trackIndex) {
+    const el = this._el("input", "volume-slider");
+    const id = `volumeTrack${trackIndex}`;
+    this._els[id] = id;
+
+    let volume = this._state.getValue(`t${trackIndex}vol`);
+
+    el.setAttribute("id", id);
+    el.setAttribute("type", "range");
+    el.setAttribute("value", volume);
+    el.setAttribute("min", -1);
+    el.setAttribute("max", 2);
+    el.setAttribute("step", 0.1);
+    el.setAttribute("trackIndex", trackIndex);
+
+    el.addEventListener("change", this.onChangeTrackVolume.bind(this), false);
+
+    return el;
   }
 
   _draw_beat(trackIndex, beatIndex, beatState) {
