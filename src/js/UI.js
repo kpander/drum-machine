@@ -1,6 +1,18 @@
 "use strict";
 /*global document, Tracks, Clipboard, location, alert*/
 
+/**
+ * @file
+ * UI.js
+ *
+ * Yes, this is a messy mashup of all the UI things in one ugly file instead
+ * of a nice component-based organization. That's ok, it's a toy demo and we
+ * don't want to introduce unnecessary complexity (React, Vue, etc.) for the
+ * purpose of this.
+ *
+ * If it gets more complex or interesting, then maybe...
+ */
+
 class UI {
   constructor(state, els) {
     this._state = state;
@@ -12,52 +24,46 @@ class UI {
     this._bind_controls();
   }
 
-  get _ids() {
+  get _controls() {
+    const barBeats = this._state.getValue("barbeats").join("/");
+    const speed = this._state.getValue("bpm");
+
     return {
-      btnReset: "reset",
-      inpBarBeats: "numBeats",
-      btnBarBeats: "barBeats",
-      inpSpeed: "numSpeed",
-      btnPlay: "playPause",
-      btnCopy: "copyUrl",
+      btnReset: { type: "button", label: "Reset", props: 
+        { id: "reset" } 
+      },
+      inpBarBeats: { type: "input", label: "Beats per bar:", props: 
+        { id: "numBeats", type: "text", value: barBeats } 
+      },
+      btnBarBeats: { type: "button", label: "Apply", props: 
+        { id: "barBeats", class: "bar-beats-button" } 
+      },
+      inpSpeed: { type: "input", label: "Speed:", props: 
+        { id: "numSpeed", type: "range", value: speed, min: "40", max: "220" }
+      },
+      btnPlay: { type: "button", label: "Play", props: 
+        { id: "playPause", class: "play-pause-button" } 
+      },
+      btnCopy: { type: "button", label: "Copy URL", props: 
+        { id: "copyUrl", class: "copy-url" } 
+      }
     };
   }
 
-  get _controls() {
-    return [
-      { type: "button", label: "Reset", props: 
-        { id: this._ids.btnReset } 
-      },
-      { type: "input", label: "Beats per bar:", props: 
-        { id: this._ids.inpBarBeats, type: "text", value: this._state.getValue("barbeats").join("/") } 
-      },
-      { type: "button", label: "Apply", props: 
-        { id: this._ids.btnBarBeats, class: "bar-beats-button" } 
-      },
-      { type: "input", label: "Speed:", props: 
-        { id: this._ids.inpSpeed, type: "range", value: this._state.getValue("bpm"), min: "40", max: "220" }
-      },
-      { type: "button", label: "Play", props: 
-        { id: this._ids.btnPlay, class: "play-pause-button" } 
-      },
-      { type: "button", label: "Copy URL", props: 
-        { id: this._ids.btnCopy, class: "copy-url" } 
-      },
-    ];
-  }
-
   _build_controls() {
-    this._controls.forEach(control => {
-      this._els.controls.appendChild(this._build_control(control));
-    });
-    Object.keys(this._ids).forEach(key => {
-      const id = this._ids[key];
+    Object.keys(this._controls).forEach(key => {
+      const control = this._controls[key];
+      const id = control.props.id;
+
+      const el = this._build_control(control);
+      this._els.controls.appendChild(el);
+
       this._els[key] = document.getElementById(id);
     });
   }
 
   _build_control(control) {
-    const el = this._el_control(control);
+    const el = this._create_el_control(control);
     let label;
 
     switch (control.type) {
@@ -66,7 +72,7 @@ class UI {
         return el;
       case "input":
         // <input> gets wrapped in a <label>.
-        label = this._el("label");
+        label = this._create_el("label");
         label.textContent = control.label;
         label.appendChild(el);
         return label;
@@ -134,9 +140,9 @@ class UI {
   }
 
   _draw_track(name, trackIndex, beatStates) {
-    const elTrack = this._el("div", "track");
+    const elTrack = this._create_el("div", "track");
     
-    const elTrackHead = this._el("div", "track-head");
+    const elTrackHead = this._create_el("div", "track-head");
     elTrackHead.appendChild(this._draw_track_title(name));
     elTrackHead.appendChild(this._draw_track_volume(trackIndex));
 
@@ -145,7 +151,7 @@ class UI {
     const totalBeats = this._state.getValue("barbeats").reduce((a, b) => {
       return a + b;
     }, 0);
-    const elBeatsContainer = this._el("div", "beats-container");
+    const elBeatsContainer = this._create_el("div", "beats-container");
     elBeatsContainer.style.gridTemplateColumns = `repeat(${totalBeats}, 1fr)`;
 
     beatStates.forEach((beatState, beatIndex) => {
@@ -157,7 +163,7 @@ class UI {
   }
 
   _draw_track_title(name) {
-    const el = this._el("div", "title");
+    const el = this._create_el("div", "title");
     el.textContent = name;
 
     return el;
@@ -167,7 +173,7 @@ class UI {
    * Create a volume slider for a track.
    */
   _draw_track_volume(trackIndex) {
-    const el = this._el("input", "volume-slider");
+    const el = this._create_el("input", "volume-slider");
     const id = `volumeTrack${trackIndex}`;
     this._els[id] = id;
 
@@ -187,7 +193,7 @@ class UI {
   }
 
   _draw_beat(trackIndex, beatIndex, beatState) {
-    const elBeat = this._el("div", "beat");
+    const elBeat = this._create_el("div", "beat");
     if (beatState === true) {
       elBeat.classList.add("active");
     }
@@ -231,14 +237,14 @@ class UI {
   /**
    * Create a new DOM element and apply the given class name.
    */
-  _el(type, className=null) {
+  _create_el(type, className=null) {
     const el = document.createElement(type);
     if (className) el.classList.add(className);
     return el;
   }
 
-  _el_control(control={}) {
-    let el = this._el(control.type);
+  _create_el_control(control={}) {
+    let el = this._create_el(control.type);
 
     Object.keys(control.props).forEach(key => {
       el.setAttribute(key, control.props[key]);
