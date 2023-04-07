@@ -13,6 +13,55 @@
  * If it gets more complex or interesting, then maybe...
  */
 
+class Component {
+  constructor() {}
+
+  /**
+   * Create an HTML element of type config.type.
+   *
+   * config = {
+   *   type: "input",
+   *   label: "Name:",
+   *   attrs: {
+   *     id: "firstname", class: "form input name"
+   *   }
+   * }
+   *
+   * If config.label has a string value, the element will be wrapped in a
+   * <label> element, with textContent = the value.
+   *
+   * If config.textContent has a string value, we will set the element's
+   * textContent = the value.
+   */
+  static create(config) {
+    const hasLabel = typeof config.label === "string";
+    const el = document.createElement(config.type);
+
+    Object.keys(config.attrs).forEach(key => {
+      if (key === "class") {
+        config.attrs[key].split(" ").forEach(className => {
+          el.classList.add(className);
+        });
+      } else {
+        el.setAttribute(key, config.attrs[key]);
+      }
+    });
+
+    if (typeof config.textContent === "string") {
+      el.textContent = config.textContent;
+    }
+
+    if (hasLabel) {
+      let label = document.createElement("label");
+      label.textContent = config.label;
+      label.appendChild(el);
+      return label;
+    } else {
+      return el;
+    }
+  }
+}
+
 class UI {
   constructor(state, els) {
     this._state = state;
@@ -21,7 +70,6 @@ class UI {
     this.tracks = new Tracks(this._state);
 
     this._build_controls();
-    this._bind_controls();
   }
 
   get _controls() {
@@ -29,23 +77,28 @@ class UI {
     const speed = this._state.getValue("bpm");
 
     return {
-      btnReset: { type: "button", label: "Reset", props: 
-        { id: "reset" } 
+      btnReset: { type: "button", textContent: "Reset",
+        attrs: { id: "reset" },
+        event: { action: "click", fn: this.onClickReset.bind(this) }
       },
-      inpBarBeats: { type: "input", label: "Beats per bar:", props: 
-        { id: "numBeats", type: "text", value: barBeats } 
+      inpBarBeats: { type: "input", label: "Beats per bar:",
+        attrs: { id: "numBeats", type: "text", value: barBeats },
       },
-      btnBarBeats: { type: "button", label: "Apply", props: 
-        { id: "barBeats", class: "bar-beats-button" } 
+      btnBarBeats: { type: "button", textContent: "Apply",
+        attrs: { id: "barBeats", class: "bar-beats-button" },
+        event: { action: "click", fn: this.onClickBarBeats.bind(this) }
       },
-      inpSpeed: { type: "input", label: "Speed:", props: 
-        { id: "numSpeed", type: "range", value: speed, min: "40", max: "220" }
+      inpSpeed: { type: "input", label: "Speed:",
+        attrs: { id: "numSpeed", type: "range", value: speed, min: "40", max: "220" },
+        event: { action: "change", fn: this.onChangeSpeed.bind(this) }
       },
-      btnPlay: { type: "button", label: "Play", props: 
-        { id: "playPause", class: "play-pause-button" } 
+      btnPlay: { type: "button", textContent: "Play",
+        attrs: { id: "playPause", class: "play-pause-button" },
+        event: { action: "click", fn: this.onClickPlay.bind(this) }
       },
-      btnCopy: { type: "button", label: "Copy URL", props: 
-        { id: "copyUrl", class: "copy-url" } 
+      btnCopy: { type: "button", textContent: "Copy URL",
+        attrs: { id: "copyUrl", class: "copy-url" },
+        event: { action: "click", fn: this.onClickCopy.bind(this) }
       }
     };
   }
@@ -53,41 +106,19 @@ class UI {
   _build_controls() {
     Object.keys(this._controls).forEach(key => {
       const control = this._controls[key];
-      const id = control.props.id;
-
-      const el = this._build_control(control);
+      const el = Component.create(control);
       this._els.controls.appendChild(el);
 
-      this._els[key] = document.getElementById(id);
+      this._els[key] = document.getElementById(control.attrs.id);
+
+      if (control.event) {
+        this._els[key].addEventListener(
+          control.event.action,
+          control.event.fn,
+          false
+        );
+      }
     });
-  }
-
-  _build_control(control) {
-    const el = this._create_el_control(control);
-    let label;
-
-    switch (control.type) {
-      case "button":
-        el.textContent = control.label;
-        return el;
-      case "input":
-        // <input> gets wrapped in a <label>.
-        label = this._create_el("label");
-        label.textContent = control.label;
-        label.appendChild(el);
-        return label;
-    }
-  }
-
-  /**
-   * Add click events to the UI controls.
-   */
-  _bind_controls() {
-    this._els.btnReset.addEventListener("click", this.onClickReset.bind(this), false);
-    this._els.btnPlay.addEventListener("click", this.onClickPlay.bind(this), false);
-    this._els.btnCopy.addEventListener("click", this.onClickCopy.bind(this), false);
-    this._els.btnBarBeats.addEventListener("click", this.onClickBarBeats.bind(this), false);
-    this._els.inpSpeed.addEventListener("change", this.onChangeSpeed.bind(this), false);
   }
 
   onClickReset(/*event*/) {
@@ -140,9 +171,9 @@ class UI {
   }
 
   _draw_track(name, trackIndex, beatStates) {
-    const elTrack = this._create_el("div", "track");
+    const elTrack = Component.create({ type: "div", attrs: { class: "track" } });
     
-    const elTrackHead = this._create_el("div", "track-head");
+    const elTrackHead = Component.create({ type: "div", attrs: { class: "track-head" } });
     elTrackHead.appendChild(this._draw_track_title(name));
     elTrackHead.appendChild(this._draw_track_volume(trackIndex));
 
@@ -151,7 +182,7 @@ class UI {
     const totalBeats = this._state.getValue("barbeats").reduce((a, b) => {
       return a + b;
     }, 0);
-    const elBeatsContainer = this._create_el("div", "beats-container");
+    const elBeatsContainer = Component.create({ type: "div", attrs: { class: "beats-container" } });
     elBeatsContainer.style.gridTemplateColumns = `repeat(${totalBeats}, 1fr)`;
 
     beatStates.forEach((beatState, beatIndex) => {
@@ -163,46 +194,40 @@ class UI {
   }
 
   _draw_track_title(name) {
-    const el = this._create_el("div", "title");
-    el.textContent = name;
-
-    return el;
+    return Component.create({ type: "div", textContent: name, attrs: { class: "title" } });
   }
 
   /**
    * Create a volume slider for a track.
    */
   _draw_track_volume(trackIndex) {
-    const el = this._create_el("input", "volume-slider");
-    const id = `volumeTrack${trackIndex}`;
-    this._els[id] = id;
-
-    let volume = this._state.getValue(`t${trackIndex}vol`);
-
-    el.setAttribute("id", id);
-    el.setAttribute("type", "range");
-    el.setAttribute("value", volume);
-    el.setAttribute("min", -1);
-    el.setAttribute("max", 2);
-    el.setAttribute("step", 0.1);
-    el.setAttribute("trackIndex", trackIndex);
-
+    const attrs = {
+      id: `volumeTrack${trackIndex}`,
+      type: "range",
+      value: this._state.getValue(`t${trackIndex}vol`),
+      class: "volume-slider",
+      min: -1,
+      max: 2,
+      step: 0.1,
+      trackIndex: trackIndex,
+    };
+    const el = Component.create({ type: "input", attrs: attrs });
     el.addEventListener("change", this.onChangeTrackVolume.bind(this), false);
 
     return el;
   }
 
   _draw_beat(trackIndex, beatIndex, beatState) {
-    const elBeat = this._create_el("div", "beat");
-    if (beatState === true) {
-      elBeat.classList.add("active");
-    }
-
     const barStarts = this._get_bar_starts();
-    if (barStarts.includes(beatIndex)) elBeat.classList.add("bar-first");
+    const attrs = {
+      class: "beat",
+      "data-track-index": trackIndex,
+      "data-beat-index": beatIndex,
+    };
+    if (beatState === true) attrs.class += " active";
+    if (barStarts.includes(beatIndex)) attrs.class += " bar-first";
 
-    elBeat.dataset.trackIndex = trackIndex;
-    elBeat.dataset.beatIndex = beatIndex;
+    const elBeat = Component.create({ type: "div", attrs: attrs });
     elBeat.addEventListener("click", this.onClickBeat.bind(this), false);
 
     return elBeat;
@@ -232,27 +257,6 @@ class UI {
 
     return starts;
   }
-
-
-  /**
-   * Create a new DOM element and apply the given class name.
-   */
-  _create_el(type, className=null) {
-    const el = document.createElement(type);
-    if (className) el.classList.add(className);
-    return el;
-  }
-
-  _create_el_control(control={}) {
-    let el = this._create_el(control.type);
-
-    Object.keys(control.props).forEach(key => {
-      el.setAttribute(key, control.props[key]);
-    });
-
-    return el;
-  }
-
 
   /**
    * User clicked a specific beat of a specific track. Toggle its value.
