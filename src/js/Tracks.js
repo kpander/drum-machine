@@ -11,11 +11,11 @@ class Tracks {
     // I notify all of these objects about the new configuration values.
     // This is typically the UI.
     this.subscribed = [];
-    this._audio = null;
   }
 
   init() {
     this.isPlaying = false;
+    this._audio = null;
     this.currentBeat = 0; // Which beat in the entire sequence is playing now.
     this.subscribers = {};
     this.tracks = [];
