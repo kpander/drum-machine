@@ -108,3 +108,11 @@ h1 {
   background: green;
 }
 
+
+/* Github link */
+.github {
+  font-size: 85%;
+}
+.github a {
+  color: #69f;
+}
