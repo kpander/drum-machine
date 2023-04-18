@@ -4,6 +4,9 @@
 
 This is a simple toy implementation of a drum machine sequencer.
 
+A live demo can be seen here: [https://kpander.github.io/drum-machine](https://kpander.github.io/drum-machine/index.html)
+
+
 # Build
 
 There is currently no build step.
